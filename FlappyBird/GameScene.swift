@@ -24,6 +24,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     
     // スコア
     var score = 0
+    var scoreLabelNode: SKLabelNode!
+    var bestScoreLabelNode: SKLabelNode!
+    
+    let userDefaults:UserDefaults = UserDefaults.standard    // 追加
     
     
     // SKView上にシーンが表示されたときに呼ばれるメソッド
@@ -45,10 +49,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         scrollNode.addChild(wallNode)
         
         //各種スプライトを生成する処理をメソッドに分割
+        
+        setupItem()
+        
         setupGround()
         setupCloud()
         setupWall()
         setupBird()
+        
+        setupScoreLabel()
+        
         
     }
     
@@ -96,7 +106,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             }
             
         }
+    
+    func setupItem()  {
+        //画像を読み込む
+        let itemTexture = SKTexture(imageNamed: "Smoke1")
+        itemTexture.filteringMode = SKTextureFilteringMode.nearest
         
+        //必要な枚数を計算
+        let needItemNumber = 2.0 + (frame.size.width / itemTexture.size().width)
+        
+        //スクロールするアクションを作成
+        //左方向に画像一枚分スクロールさせるアクション
+        let moveItem = SKAction.moveBy(x: -itemTexture.size().width, y: 0, duration: 20.0)
+        
+        //元の位置に戻すアクション
+        let resetItem = SKAction.moveBy(x: itemTexture.size().width, y: 0, duration: 0.0)
+        
+        // 左にスクロール->元の位置->左にスクロールと無限に繰り替えるアクション
+        let repeatScrollItem = SKAction.repeatForever(SKAction.sequence([moveItem, resetItem]))
+        
+        // スプライトを配置する
+        stride(from: 0.0, to: needItemNumber, by: 1.0).forEach { i in
+            let sprite = SKSpriteNode(texture: itemTexture)
+            sprite.zPosition = -100 // 一番後ろになるようにする
+            
+            // スプライトの表示する位置を指定する
+            sprite.position = CGPoint(x: i * sprite.size.width, y: size.height - itemTexture.size().height / 2)
+            
+            // スプライトにアニメーションを設定する
+            sprite.run(repeatScrollItem)
+            
+            // スプライトを追加する
+            scrollNode.addChild(sprite)
+        }
+    }
+    
         func setupCloud(){
             
             //雲の画像を読み込む
@@ -287,6 +331,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             print("ScoreUp")
             score += 1
             
+            scoreLabelNode.text = "Score:\(score)"    // ←追加
+            
+            // ベストスコア更新か確認する
+            var bestScore = userDefaults.integer(forKey: "BEST")
+            
+            if score > bestScore{
+                bestScore = score
+                bestScoreLabelNode.text = "Best Score:\(bestScore)"    // ←追加
+                userDefaults.set(bestScore, forKey: "BEST")
+                userDefaults.synchronize()
+            }
+            
+            
         }else{
             // 壁か地面と衝突した
             print("GameOver")
@@ -306,6 +363,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     
     func restart() {
         score = 0
+        scoreLabelNode.text = String("Score:\(score)")    // ←追加
         
         bird.position = CGPoint(x: self.frame.size.width * 0.2, y:self.frame.size.height * 0.7)
         bird.physicsBody?.velocity = CGVector.zero
@@ -318,6 +376,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         scrollNode.speed = 1
     }
     
+    func setupScoreLabel(){
+        score = 0
+        scoreLabelNode = SKLabelNode()
+        scoreLabelNode.fontColor = UIColor.black
+        scoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 30)
+        scoreLabelNode.zPosition = 100 // 一番手前に表示する
+        scoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
+        scoreLabelNode.text = "Score:\(score)"
+        self.addChild(scoreLabelNode)
+        
+        bestScoreLabelNode = SKLabelNode()
+        bestScoreLabelNode.fontColor = UIColor.black
+        bestScoreLabelNode.position = CGPoint(x: 10, y: self.frame.size.height - 60)
+        bestScoreLabelNode.zPosition = 100 // 一番手前に表示する
+        bestScoreLabelNode.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
+        
+        let bestScore = userDefaults.integer(forKey: "BEST")
+        bestScoreLabelNode.text = "Best Score:\(bestScore)"
+        self.addChild(bestScoreLabelNode)
+        
+    }
     
     
     
