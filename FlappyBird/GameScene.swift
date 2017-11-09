@@ -262,7 +262,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             //アイテム
             item.run(itemAnimation)
-            self.itemNode.addChild(item)
+            self.itemNode.addChild(items)
             
             
         })
