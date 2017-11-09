@@ -16,6 +16,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     var wallNode:SKNode!
     var bird:SKSpriteNode!
     
+    var itemNode:SKNode!
+    
     // 衝突判定カテゴリー ↓追加
     let birdCategory: UInt32 = 1 << 0       // 0...00001
     let groundCategory: UInt32 = 1 << 1     // 0...00010
@@ -48,9 +50,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         wallNode = SKNode()
         scrollNode.addChild(wallNode)
         
+        itemNode = SKNode()
+        scrollNode.addChild(itemNode)
+        
         //各種スプライトを生成する処理をメソッドに分割
         
-        setupItem()
         
         setupGround()
         setupCloud()
@@ -107,39 +111,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
         }
     
-    func setupItem()  {
-        //画像を読み込む
-        let itemTexture = SKTexture(imageNamed: "Smoke1")
-        itemTexture.filteringMode = SKTextureFilteringMode.nearest
-        
-        //必要な枚数を計算
-        let needItemNumber = 2.0 + (frame.size.width / itemTexture.size().width)
-        
-        //スクロールするアクションを作成
-        //左方向に画像一枚分スクロールさせるアクション
-        let moveItem = SKAction.moveBy(x: -itemTexture.size().width, y: 0, duration: 20.0)
-        
-        //元の位置に戻すアクション
-        let resetItem = SKAction.moveBy(x: itemTexture.size().width, y: 0, duration: 0.0)
-        
-        // 左にスクロール->元の位置->左にスクロールと無限に繰り替えるアクション
-        let repeatScrollItem = SKAction.repeatForever(SKAction.sequence([moveItem, resetItem]))
-        
-        // スプライトを配置する
-        stride(from: 0.0, to: needItemNumber, by: 1.0).forEach { i in
-            let sprite = SKSpriteNode(texture: itemTexture)
-            sprite.zPosition = -100 // 一番後ろになるようにする
-            
-            // スプライトの表示する位置を指定する
-            sprite.position = CGPoint(x: i * sprite.size.width, y: size.height - itemTexture.size().height / 2)
-            
-            // スプライトにアニメーションを設定する
-            sprite.run(repeatScrollItem)
-            
-            // スプライトを追加する
-            scrollNode.addChild(sprite)
-        }
-    }
     
         func setupCloud(){
             
@@ -178,21 +149,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         }
     
     func setupWall(){
+        //壁とアイテムを同じロジックで出現させる
         
+        //壁画像を読み込む
         let wallTexture = SKTexture(imageNamed: "wall")
         wallTexture.filteringMode = SKTextureFilteringMode.linear
         
-        // 移動する距離を計算
+        //アイテム画像を読み込む
+        let itemTexture = SKTexture(imageNamed: "Smoke1")
+        itemTexture.filteringMode = SKTextureFilteringMode.nearest
+        
+        
+        // 壁移動する距離を計算
         let movingDistance = CGFloat(self.frame.size.width + wallTexture.size().width)
         
-        // 画面外まで移動するアクションを作成
+        // アイテム　移動する距離を計算
+        let movingItemDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
+        
+        
+        // 壁 画面外まで移動するアクションを作成
         let moveWall = SKAction.moveBy(x: -movingDistance, y: 0, duration:4.0)
         
-        // 自身を取り除くアクションを作成
+        // アイテム　画面外まで移動するアクションを作成
+        let moveItem = SKAction.moveBy(x: -movingItemDistance, y: 0, duration: 4.0)
+        
+        // 壁 自身を取り除くアクションを作成
         let removeWall = SKAction.removeFromParent()
         
-        // 2つのアニメーションを順に実行するアクションを作成
+        //　アイテム　自身を取り除くアクションを作成
+        let removeItem = SKAction.removeFromParent()
+        
+        // 壁 2つのアニメーションを順に実行するアクションを作成
         let wallAnimation = SKAction.sequence([moveWall, removeWall])
+        
+        //アイテム 2つのアニメーションを順に実行するアクションを作成
+        let itemAnimation = SKAction.sequence([moveItem,removeItem])
+        
         
         // 壁を生成するアクションを作成
         let createWallAnimation = SKAction.run({
@@ -201,6 +193,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             wall.position = CGPoint(x: self.frame.size.width + wallTexture.size().width / 2, y: 0.0)
             wall.zPosition = -50.0 // 雲より手前、地面より奥
+            
+            // アイテム関連のノードを乗せるノードを作成
+            let item = SKNode()
+            
+            item.position = CGPoint(x: self.frame.size.width + itemTexture.size().width / 2, y: 0.0)
+            item.zPosition = -50.0 //壁と合わせる
             
             // 画面のY軸の中央値
             let center_y = self.frame.size.height / 2
@@ -220,6 +218,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             let under = SKSpriteNode(texture: wallTexture)
             under.position = CGPoint(x: 0.0, y: under_wall_y)
             wall.addChild(under)
+            
+            // アイテムの出現位置を下側の壁と合わせる
+            let items = SKSpriteNode(texture: itemTexture)
+            items.position = CGPoint(x: 0.0, y: under_wall_y)
+            items.addChild(item)
+            
+            items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
+            
             
             // スプライトに物理演算を設定する
             under.physicsBody = SKPhysicsBody(rectangleOf: wallTexture.size())    // ←追加
@@ -254,13 +260,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             self.wallNode.addChild(wall)
             
+            //アイテム
+            item.run(itemAnimation)
+            self.itemNode.addChild(item)
+            
+            
         })
         
         // 次の壁作成までの待ち時間のアクションを作成
-        let waitAnimation = SKAction.wait(forDuration: 2)
+        let waitAnimation = SKAction.wait(forDuration: 1)
         
-        // 壁を作成->待ち時間->壁を作成を無限に繰り替えるアクションを作成
-        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation]))
+        // 壁を作成->待ち時間>アイテムを作成>待ち時間->壁を作成を無限に繰り替えるアクションを作成
+        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation,itemAnimation, waitAnimation,createWallAnimation]))
         
         wallNode.run(repeatForeverAnimation)
         
