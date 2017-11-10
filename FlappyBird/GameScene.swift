@@ -24,6 +24,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
     let wallCategory: UInt32 = 1 << 2       // 0...00100
     let scoreCategory: UInt32 = 1 << 3      // 0...01000
     
+    let itemCategory: UInt32 = 1 << 4
+    
     // スコア
     var score = 0
     var scoreLabelNode: SKLabelNode!
@@ -227,9 +229,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
             items.physicsBody?.isDynamic = false
             
+            items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
+            items.physicsBody?.categoryBitMask = self.itemCategory
+            
             
             // スプライトに物理演算を設定する
             under.physicsBody = SKPhysicsBody(rectangleOf: wallTexture.size())    // ←追加
+            under.physicsBody?.categoryBitMask = self.wallCategory    // ←追加
             
             // 衝突の時に動かないように設定する
             under.physicsBody?.isDynamic = false    // ←追加
@@ -240,6 +246,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             // スプライトに物理演算を設定する
             upper.physicsBody = SKPhysicsBody(rectangleOf: wallTexture.size())    // ←追加
+            upper.physicsBody?.categoryBitMask = self.wallCategory    // ←追加
             
             // 衝突の時に動かないように設定する
             upper.physicsBody?.isDynamic = false    // ←追加
@@ -383,7 +390,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         
         wallNode.removeAllChildren()
         
-        itemNode.removeAllActions()
+        itemNode.removeAllChildren()
         
         bird.speed = 1
         scrollNode.speed = 1
