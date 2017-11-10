@@ -344,6 +344,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             return
         }
         
+        if(contact.bodyA.categoryBitMask & itemCategory) == itemCategory || (contact.bodyB.categoryBitMask & itemCategory) == itemCategory{
+            print("item")
+        }
+        
         if(contact.bodyA.categoryBitMask & scoreCategory) == scoreCategory || (contact.bodyB.categoryBitMask & scoreCategory) == scoreCategory{
             // スコア用の物体と衝突した
             print("ScoreUp")
