@@ -221,10 +221,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             // アイテムの出現位置を下側の壁と合わせる
             let items = SKSpriteNode(texture: itemTexture)
-            items.position = CGPoint(x: 0.0, y: under_wall_y)
+            items.position = CGPoint(x: 100.0, y: under_wall_y + 300)
             items.addChild(item)
             
             items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
+            items.physicsBody?.isDynamic = false
             
             
             // スプライトに物理演算を設定する
@@ -268,13 +269,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         })
         
         // 次の壁作成までの待ち時間のアクションを作成
-        let waitAnimation = SKAction.wait(forDuration: 1)
+        let waitAnimation = SKAction.wait(forDuration: 2)
         
         // 壁を作成->待ち時間>アイテムを作成>待ち時間->壁を作成を無限に繰り替えるアクションを作成
-        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation,itemAnimation, waitAnimation,createWallAnimation]))
+        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createWallAnimation, waitAnimation]))
         
         wallNode.run(repeatForeverAnimation)
-        
         
     }
     
@@ -382,6 +382,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         bird.zRotation = 0.0
         
         wallNode.removeAllChildren()
+        
+        itemNode.removeAllActions()
         
         bird.speed = 1
         scrollNode.speed = 1
