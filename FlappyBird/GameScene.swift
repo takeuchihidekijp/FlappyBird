@@ -67,6 +67,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         
         setupGround()
         setupCloud()
+        
+        setupItem()
+        
         setupWall()
         setupBird()
         
@@ -157,6 +160,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
         }
     
+    func setupItem(){
+        
+        //アイテム画像を読み込む
+        let itemTexture = SKTexture(imageNamed: "Smoke1")
+        itemTexture.filteringMode = SKTextureFilteringMode.nearest
+        
+        // アイテム　移動する距離を計算
+        let movingItemDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
+        
+        // アイテム　画面外まで移動するアクションを作成
+        let moveItem = SKAction.moveBy(x: -movingItemDistance, y: 0, duration: 4.0)
+        
+        //　アイテム　自身を取り除くアクションを作成
+        let removeItem = SKAction.removeFromParent()
+        
+        //アイテム 2つのアニメーションを順に実行するアクションを作成
+        let itemAnimation = SKAction.sequence([moveItem,removeItem])
+        
+        let createitemAnimation = SKAction.run({
+        // アイテム関連のノードを乗せるノードを作成
+        let item = SKNode()
+        
+        item.position = CGPoint(x: self.frame.size.width + itemTexture.size().width / 2, y: 0.0)
+        item.zPosition = -50.0 //壁と合わせる
+        
+        // 画面のY軸の中央値
+        let center_y = self.frame.size.height / 2
+        // 壁のY座標を上下ランダムにさせるときの最大値
+        let random_y_range = self.frame.size.height / 4
+        // 下の壁のY軸の下限
+        let under_item_lowest_y = UInt32( center_y - itemTexture.size().height / 2 -  random_y_range / 2)
+        // 1〜random_y_rangeまでのランダムな整数を生成
+        let random_y = arc4random_uniform( UInt32(random_y_range) )
+        // Y軸の下限にランダムな値を足して、下の壁のY座標を決定
+        let under_item_y = CGFloat(under_item_lowest_y + random_y)
+        
+        // アイテムの出現位置を下側の壁と合わせる
+        let items = SKSpriteNode(texture: itemTexture)
+        items.position = CGPoint(x: 100.0, y: under_item_y + 300)
+        items.addChild(item)
+        
+        items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
+        items.physicsBody?.isDynamic = false
+        
+        items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
+        items.physicsBody?.categoryBitMask = self.itemCategory
+        
+        //アイテム
+        item.run(itemAnimation)
+        self.itemNode.addChild(items)
+        })
+        
+        // 次の壁作成までの待ち時間のアクションを作成
+        let waitAnimation = SKAction.wait(forDuration: 2)
+        
+        // 壁を作成->待ち時間>アイテムを作成>待ち時間->壁を作成を無限に繰り替えるアクションを作成
+        let repeatForeverAnimation = SKAction.repeatForever(SKAction.sequence([createitemAnimation, waitAnimation]))
+        
+        
+        itemNode.run(repeatForeverAnimation)
+        
+    }
+    
+    
     func setupWall(){
         //壁とアイテムを同じロジックで出現させる
         
@@ -164,35 +231,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
         let wallTexture = SKTexture(imageNamed: "wall")
         wallTexture.filteringMode = SKTextureFilteringMode.linear
         
-        //アイテム画像を読み込む
-        let itemTexture = SKTexture(imageNamed: "Smoke1")
-        itemTexture.filteringMode = SKTextureFilteringMode.nearest
-        
         
         // 壁移動する距離を計算
         let movingDistance = CGFloat(self.frame.size.width + wallTexture.size().width)
-        
-        // アイテム　移動する距離を計算
-        let movingItemDistance = CGFloat(self.frame.size.width + itemTexture.size().width)
+    
         
         
         // 壁 画面外まで移動するアクションを作成
         let moveWall = SKAction.moveBy(x: -movingDistance, y: 0, duration:4.0)
         
-        // アイテム　画面外まで移動するアクションを作成
-        let moveItem = SKAction.moveBy(x: -movingItemDistance, y: 0, duration: 4.0)
         
         // 壁 自身を取り除くアクションを作成
         let removeWall = SKAction.removeFromParent()
         
-        //　アイテム　自身を取り除くアクションを作成
-        let removeItem = SKAction.removeFromParent()
+
         
         // 壁 2つのアニメーションを順に実行するアクションを作成
         let wallAnimation = SKAction.sequence([moveWall, removeWall])
         
-        //アイテム 2つのアニメーションを順に実行するアクションを作成
-        let itemAnimation = SKAction.sequence([moveItem,removeItem])
+
         
         
         // 壁を生成するアクションを作成
@@ -203,11 +260,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             wall.position = CGPoint(x: self.frame.size.width + wallTexture.size().width / 2, y: 0.0)
             wall.zPosition = -50.0 // 雲より手前、地面より奥
             
-            // アイテム関連のノードを乗せるノードを作成
-            let item = SKNode()
-            
-            item.position = CGPoint(x: self.frame.size.width + itemTexture.size().width / 2, y: 0.0)
-            item.zPosition = -50.0 //壁と合わせる
+
             
             // 画面のY軸の中央値
             let center_y = self.frame.size.height / 2
@@ -228,16 +281,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             under.position = CGPoint(x: 0.0, y: under_wall_y)
             wall.addChild(under)
             
-            // アイテムの出現位置を下側の壁と合わせる
-            let items = SKSpriteNode(texture: itemTexture)
-            items.position = CGPoint(x: 100.0, y: under_wall_y + 300)
-            items.addChild(item)
-            
-            items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
-            items.physicsBody?.isDynamic = false
-            
-            items.physicsBody = SKPhysicsBody(rectangleOf: itemTexture.size())
-            items.physicsBody?.categoryBitMask = self.itemCategory
+
             
             
             // スプライトに物理演算を設定する
@@ -275,9 +319,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate{
             
             self.wallNode.addChild(wall)
             
-            //アイテム
-            item.run(itemAnimation)
-            self.itemNode.addChild(items)
+
             
             
         })
